@@ -14,11 +14,10 @@ services:
     depends_on:
       - postgres
     ports:
-      - 5000:5000
+      - 8080:5000
       - 9229:9229  # debugger port
     volumes:
       - .:/usr/src/app
-      - /usr/src/app/.pnpm-store
       - /usr/src/app/node_modules
     command: pnpm start:docker
     environment:

@@ -3,7 +3,7 @@ import express from 'express';
 const app = express();
 
 app.get('/', (req, res) => {
-    res.json({hello: 'world'});
+    res.json({hello: 'guys'});
 });
 
 const port = Number(process.env.PORT || 8080);
