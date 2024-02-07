@@ -6,7 +6,7 @@ services:
     ports:
       - 5432:5432  # enables connecting locally via psql
     environment:
-      POSTGRES_DB: webapp_dev
+      POSTGRES_DB: apogeeze_dev
       POSTGRES_HOST_AUTH_METHOD: trust
 
   backend:
@@ -21,5 +21,5 @@ services:
       - /usr/src/app/node_modules
     command: pnpm start:docker
     environment:
-      DATABASE_URL: postgres://postgres@postgres/webapp_dev
+      DATABASE_URL: postgres://postgres@postgres/apogeeze_dev
       PORT: 5000

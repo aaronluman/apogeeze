@@ -6,13 +6,17 @@
   "scripts": {
     "build": "rm -rf dist && swc ./src/ -d dist",
     "start": "node dist/src/index.js",
-    "start:docker": "npm ci && npm run build && node --inspect=0.0.0.0 dist/src/index.js",
+    "start:docker": "npm ci && npm run build && node dist/src/index.js",
     "watch": "watchy --no-init-spawn --debounce 1 -w src -- docker-compose restart backend",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^5.9.1",
     "express": "^4.18.2",
     "typescript": "^5.3.3"
   },
@@ -24,6 +28,8 @@
     "@types/node": "^20.11.16",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "prisma": "^5.9.1",
+    "ts-node": "^10.9.2",
     "watchy": "^0.10.1"
   }
 }
