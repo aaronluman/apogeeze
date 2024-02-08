@@ -38,7 +38,8 @@ class ListingService {
             return listings;
         }
 
-        queryFilter.section = await this.getExpandedSectionList(request.eventId, request.section);
+        const seatMap = await this.getVenueSeatMapData(request.eventId);
+        queryFilter.section = this.getExpandedSectionList(seatMap, request.section);
         listings = await this.listingRepository
             .findMany(Object.values(queryFilter))
             .then(result => this.filterExpandedSearchResults(request, result));
@@ -108,7 +109,7 @@ class ListingService {
 
     compareQuantity(sourceQuantity: number, targetQuantity: number): number {
         const distance = Math.abs(sourceQuantity - targetQuantity);
-        return Math.min(1, 1 / Math.pow(distance, .5));
+        return Math.max(0, Math.min(1, (25 - distance) / 25));
     }
 
     /**
@@ -118,8 +119,8 @@ class ListingService {
         // Use data about the venue to convert the row values into numbers. For example, theaters that use single letters
         // for the first 26 rows, followed by double letters.
         // for this example we are only using numbers for the row identifiers
-        const distance = Math.abs(Number(sourceRow) - Number(targetRow))
-        return Math.min(1, 1 / Math.pow(distance, .3))
+        const distance = Math.abs(Number(sourceRow) - Number(targetRow)) + 1;
+        return Math.max(0, -Math.pow(distance / 50 - 1/50, 2) + 1)
     }
 
     /**
@@ -152,11 +153,8 @@ class ListingService {
      * This would ideally utilize the seat map data / service to get a list of sections that could be considered comparable
      * to the target section.
      * For the purpose of this proof of concept we will consider all sections on the same level as comparable
-     *
-     * @param {string} _eventId used to determine the venue or get map for special events
-     * @param {string} section
      */
-    async getExpandedSectionList(_eventId: string, section: string): Promise<ListingFilter> {
+    getExpandedSectionList(_eventData: EventSeatMap, section: string): ListingFilter {
         return {field: 'section', operator: 'between', value: [section.slice(0,1) + '00', section.slice(0,1) + '99']}
     }
 }
