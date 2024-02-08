@@ -1,0 +1,82 @@
+{
+	"info": {
+		"_postman_id": "26deb347-4e5f-4f1a-8bcc-299caeaa0af9",
+		"name": "Test Endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12863940"
+	},
+	"item": [
+		{
+			"name": "best-match",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"listingId\": \"31a2f2cb-73fb-4153-97ab-e40863d4ac05\",\n    \"eventId\": \"9b329a50-1641-4f50-acc1-978ed7c1ce92\",\n    \"section\": \"150\",\n    \"quantity\": 4,\n    \"row\": \"9\",\n    \"cost\": 99\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/best-match",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"best-match"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "reprice",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"listingId\": \"31a2f2cb-73fb-4153-97ab-e40863d4ac05\",\n    \"eventId\": \"881841a4-ad67-4c10-9560-bfacf831950e\",\n    \"section\": \"150\",\n    \"quantity\": 4,\n    \"row\": \"9\",\n    \"cost\": 99\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/reprice",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"reprice"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "list all",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080"
+				}
+			},
+			"response": []
+		}
+	]
+}

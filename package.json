@@ -11,9 +11,6 @@
     "watch": "watchy --no-init-spawn --debounce 1 -w src -- docker-compose restart backend",
     "test": "jest"
   },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
