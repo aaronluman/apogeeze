@@ -39,3 +39,6 @@ The input data should be in this form:
 
 ## POST /best-match
 This will return the search results that reprice uses. It is primarily for debugging. It expects the same input data as reprice.
+
+# Testing
+Tests can be run via the `npm run test` command.
