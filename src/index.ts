@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import { connection } from './database/connection';
 import { ListingQueries, ListingFilter } from './database/listing';
 import { ListingService } from './service/listingService';
+import {MinimumPriceError} from "./errors/minimumPriceError";
 
 const listingRepository = new ListingQueries(connection);
 const listingService = new ListingService(listingRepository);
@@ -22,7 +23,11 @@ app
             .then(result => res.json(result))
             .catch(error => {
                 console.log(error);
-                res.status(400).json({error: 'prices are too low'});
+                let message = 'Unknown Error';
+                if (error instanceof MinimumPriceError) {
+                    message = error.message;
+                }
+                res.status(400).json({error: message});
             });
     })
     .post('/best-match', jsonParser, async (req, res) => {

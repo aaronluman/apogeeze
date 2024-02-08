@@ -1,17 +1,262 @@
-import {ListingService} from '../../src/service/listingService';
-import {describe} from "node:test";
+import {randomUUID} from 'crypto';
+import {describe} from 'node:test';
+
+import {Listing, ListingQueries} from '../../src/database/listing';
+import {ListingService, RankedListing, RepriceRequest} from '../../src/service/listingService';
 
 describe('Listing Service', () => {
     let listingService: ListingService;
-    let mockListingRepository: any;
+    const findManyMock = jest.fn();
+    const setPriceMock = jest.fn();
 
     beforeEach(() => {
-        mockListingRepository = jest.mock('../../src/database/listing')
-        listingService = new ListingService(mockListingRepository);
+        jest.spyOn(ListingQueries.prototype, 'findMany').mockImplementation(findManyMock);
+        jest.spyOn(ListingQueries.prototype, 'setPrice').mockImplementation(setPriceMock);
+        listingService = new ListingService(new ListingQueries(jest.mock('../../src/database/connection') as any));
     })
 
     afterEach(() => {
         jest.clearAllMocks();
+    });
+
+    describe('getBestMatches', () => {
+        const request: RepriceRequest = {
+            listingId: randomUUID(),
+            eventId: randomUUID(),
+            quantity: 2,
+            section: '100',
+            row: '5',
+            cost: 99,
+            currentPrice: 100,
+        };
+
+        const generateListing = (request: RepriceRequest, options: {quantity?: number, section?: string, row?: string}): Listing => {
+            return {
+                id: randomUUID(),
+                event_id: request.eventId,
+                quantity: options.quantity || request.quantity,
+                section: options.section || request.section,
+                row: options.row || request.row,
+                price: request.currentPrice,
+            }
+        }
+
+        test('gets section and quantity matches', async () => {
+            const findManyResponse = [
+                generateListing(request, {row: '1'}),
+                generateListing(request, {row: '2'}),
+                generateListing(request, {row: '3'}),
+                generateListing(request, {row: '4'}),
+                generateListing(request, {row: '5'}),
+            ];
+            findManyMock.mockReturnValue(Promise.resolve(findManyResponse));
+
+            const result = await listingService.getBestMatches(request);
+            expect(result).toEqual(findManyResponse);
+            expect(findManyMock).toHaveBeenCalledTimes(1);
+            expect(findManyMock).toHaveBeenCalledWith([
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: '=', value: request.section},
+                {field: 'quantity', operator: '=', value: request.quantity},
+            ]);
+        });
+
+        test('makes first fallback call', async () => {
+            const findManyResponse1 = [
+                generateListing(request, {row: '1'}),
+                generateListing(request, {row: '2'}),
+                generateListing(request, {row: '3'}),
+                generateListing(request, {row: '4'}),
+            ];
+            const findManyResponse2 = [...findManyResponse1];
+            findManyResponse2.push(generateListing(request, {section: '101', row: '5'}));
+            findManyMock
+                .mockReturnValueOnce(Promise.resolve(findManyResponse1))
+                .mockReturnValueOnce(Promise.resolve(findManyResponse2));
+
+            const result = await listingService.getBestMatches(request);
+            expect(result.length).toEqual(5);
+            expect(findManyMock).toHaveBeenCalledTimes(2);
+            expect(findManyMock).toHaveBeenNthCalledWith(1, [
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: '=', value: request.section},
+                {field: 'quantity', operator: '=', value: request.quantity},
+            ]);
+            expect(findManyMock).toHaveBeenNthCalledWith(2, [
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: 'between', value: ['100', '199']},
+                {field: 'quantity', operator: '=', value: request.quantity},
+            ]);
+        });
+
+        test('makes second fallback call', async () => {
+            const findManyResponse1 = [
+                generateListing(request, {row: '1'}),
+                generateListing(request, {row: '2'}),
+                generateListing(request, {row: '3'}),
+            ];
+            const findManyResponse2 = [
+                ...findManyResponse1,
+                generateListing(request, {section: '101', row: '4'}),
+            ];
+            const findManyResponse3 = [
+                ...findManyResponse2,
+                generateListing(request, {section: '100', quantity: 4, row: '5'}),
+                generateListing(request, {section: '100', quantity: 4, row: '6'}),
+                generateListing(request, {section: '100', quantity: 4, row: '7'}),
+            ];
+            findManyMock
+                .mockReturnValueOnce(Promise.resolve(findManyResponse1))
+                .mockReturnValueOnce(Promise.resolve(findManyResponse2))
+                .mockReturnValueOnce(Promise.resolve(findManyResponse3));
+
+            const result = await listingService.getBestMatches(request);
+            expect(result.length).toEqual(5);
+            expect(findManyMock).toHaveBeenCalledTimes(3);
+            expect(findManyMock).toHaveBeenNthCalledWith(1, [
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: '=', value: request.section},
+                {field: 'quantity', operator: '=', value: request.quantity},
+            ]);
+            expect(findManyMock).toHaveBeenNthCalledWith(2, [
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: 'between', value: ['100', '199']},
+                {field: 'quantity', operator: '=', value: request.quantity},
+            ]);
+            expect(findManyMock).toHaveBeenNthCalledWith(3, [
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: 'between', value: ['100', '199']},
+            ]);
+        });
+
+        test('gets many results to first fallback call', async () => {
+            const findManyResponse1 = [
+                generateListing(request, {row: '1'}),
+                generateListing(request, {row: '2'}),
+                generateListing(request, {row: '3'}),
+                generateListing(request, {row: '4'}),
+            ];
+            const findManyResponse2 = [
+                ...findManyResponse1,
+                generateListing(request, {section: '101', row: '5'}),
+                generateListing(request, {section: '102', row: '6'}),
+                generateListing(request, {section: '103', row: '7'}),
+                generateListing(request, {section: '104', row: '8'}),
+                generateListing(request, {section: '105', row: '9'}),
+                generateListing(request, {section: '106', row: '10'}),
+                generateListing(request, {section: '107', row: '11'}),
+                generateListing(request, {section: '108', row: '12'}),
+                generateListing(request, {section: '109', row: '13'}),
+                generateListing(request, {section: '109', row: '14'}),
+            ];
+            findManyMock
+                .mockReturnValueOnce(Promise.resolve(findManyResponse1))
+                .mockReturnValueOnce(Promise.resolve(findManyResponse2));
+
+            const result = await listingService.getBestMatches(request);
+            expect(result.length).toEqual(7);
+            expect(findManyMock).toHaveBeenCalledTimes(2);
+            expect(findManyMock).toHaveBeenNthCalledWith(1, [
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: '=', value: request.section},
+                {field: 'quantity', operator: '=', value: request.quantity},
+            ]);
+            expect(findManyMock).toHaveBeenNthCalledWith(2, [
+                {field: 'id', operator: '<>', value: request.listingId},
+                {field: 'event_id', operator: '=', value: request.eventId},
+                {field: 'section', operator: 'between', value: ['100', '199']},
+                {field: 'quantity', operator: '=', value: request.quantity},
+            ]);
+        });
+    });
+
+    describe('reprice', () => {
+        const request: RepriceRequest = {
+            listingId: randomUUID(),
+            eventId: randomUUID(),
+            quantity: 2,
+            section: '100',
+            row: '5',
+            cost: 99,
+            currentPrice: 100,
+        };
+
+        test('updates price and returns existing listing', async () => {
+            const setPriceResponse = {
+                id: request.listingId,
+                event_id: request.eventId,
+                quantity: request.quantity,
+                section: request.section,
+                row: request.row,
+                price: 119,
+            };
+            setPriceMock.mockReturnValue(Promise.resolve([setPriceResponse]));
+            const matches = [
+                {price: 130} as RankedListing,
+                {price: 120} as RankedListing,
+                {price: 140} as RankedListing,
+            ]
+            const result = await listingService.reprice(request, matches);
+            expect(result).toEqual(setPriceResponse);
+            expect(setPriceMock).toHaveBeenCalledWith(request.listingId, 119);
+        });
+
+        test('sets price for listing not found', async () => {
+            const setPriceResponse = {
+                event_id: request.eventId,
+                quantity: request.quantity,
+                section: request.section,
+                row: request.row,
+                price: 119,
+            };
+            setPriceMock.mockReturnValue(Promise.resolve([]));
+            const matches = [
+                {price: 130} as RankedListing,
+                {price: 120} as RankedListing,
+                {price: 140} as RankedListing,
+            ]
+            const result = await listingService.reprice(request, matches);
+            expect(result).toEqual(setPriceResponse);
+            expect(setPriceMock).toHaveBeenCalledWith(request.listingId, 119);
+        });
+
+        test('sets price for listing but error on update', async () => {
+            const setPriceResponse = {
+                event_id: request.eventId,
+                quantity: request.quantity,
+                section: request.section,
+                row: request.row,
+                price: 119,
+            };
+            setPriceMock.mockReturnValue(Promise.reject(new Error()));
+            const matches = [
+                {price: 130} as RankedListing,
+                {price: 120} as RankedListing,
+                {price: 140} as RankedListing,
+            ]
+            const result = await listingService.reprice(request, matches);
+            expect(result).toEqual(setPriceResponse);
+            expect(setPriceMock).toHaveBeenCalledWith(request.listingId, 119);
+        });
+
+        test('throws error when price too low', async () => {
+            const matches = [
+                {price: 100} as RankedListing,
+                {price: 120} as RankedListing,
+                {price: 140} as RankedListing,
+            ]
+            expect(async () => {
+                await listingService.reprice(request, matches)
+            }).rejects.toThrow();
+            expect(setPriceMock).not.toHaveBeenCalled();
+        });
     });
 
     describe('compareQuantity', () => {

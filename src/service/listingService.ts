@@ -1,4 +1,5 @@
 import {Listing, ListingFilter, ListingQueries} from '../database/listing';
+import {MinimumPriceError} from "../errors/minimumPriceError";
 
 interface RepriceRequest {
     eventId: string;
@@ -56,19 +57,18 @@ class ListingService {
         return listings;
     }
 
-    async reprice(request: RepriceRequest, matches: RankedListing[]): Promise<Listing> {
+    async reprice(request: RepriceRequest, matches: RankedListing[]): Promise<Partial<Listing>> {
         const targetMatch = matches
             .sort((a: RankedListing, b: RankedListing) => a.price - b.price)
             .at(0);
 
         const targetPrice = (targetMatch?.price || 0) - 1;
         if (targetPrice < (request.cost * this.minimumMargin)) {
-            throw new Error(`Target price of ${targetPrice} is below the minimum allowed`)
+            throw new MinimumPriceError(`Target price of ${targetPrice} is below the minimum allowed`)
         }
 
-        const getDefaultListing = (request: RepriceRequest, targetPrice: number): Listing => {
+        const getDefaultListing = (request: RepriceRequest, targetPrice: number): Partial<Listing> => {
             return {
-                id: request.listingId,
                 event_id: request.eventId,
                 price: targetPrice,
                 quantity: request.quantity,
@@ -159,4 +159,4 @@ class ListingService {
     }
 }
 
-export { RepriceRequest, ListingService };
+export { RankedListing, RepriceRequest, ListingService };
