@@ -1,3 +1,8 @@
+const dotenv = require('dotenv');
+
+if (!process?.env?.DATABASE_URL) {
+  dotenv.config({path: './.env'});
+}
 // Update with your config settings.
 
 /**

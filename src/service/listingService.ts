@@ -62,22 +62,31 @@ class ListingService {
 
         const targetPrice = (targetMatch?.price || 0) - 1;
         if (targetPrice < (request.cost * this.minimumMargin)) {
-            throw new Error('Target price is below the minimum allowed')
+            throw new Error(`Target price of ${targetPrice} is below the minimum allowed`)
+        }
+
+        const getDefaultListing = (request: RepriceRequest, targetPrice: number): Listing => {
+            return {
+                id: request.listingId,
+                event_id: request.eventId,
+                price: targetPrice,
+                quantity: request.quantity,
+                section: request.section,
+                row: request.row,
+            };
         }
 
         return this.listingRepository.setPrice(request.listingId, targetPrice)
             // knex update.returning() returns a list of items
-            .then(result => result[0])
+            .then(result => {
+                if (result.length) {
+                    return result[0];
+                }
+                return getDefaultListing(request, targetPrice);
+            })
             .catch(error => {
                 console.log(error);
-                return {
-                    id: request.listingId,
-                    event_id: request.eventId,
-                    price: targetPrice,
-                    quantity: request.quantity,
-                    section: request.section,
-                    row: request.row,
-                }
+                return getDefaultListing(request, targetPrice);
             });
     }
 

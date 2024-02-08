@@ -6,6 +6,9 @@
   "scripts": {
     "build": "rm -rf dist && swc ./src/ -d dist",
     "start": "node --env-file=.env dist/src/index.js",
+    "start:docker": "npm ci && npm run build && node dist/src/index.js",
+    "seed:docker": "npm ci && npm run build && npx knex migrate:latest && npx knex seed:run",
+    "watch": "watchy --no-init-spawn --debounce 1 -w src -- docker-compose restart backend",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "prisma": {
@@ -14,6 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "knex": "^3.1.0",
     "pg": "^8.11.3",

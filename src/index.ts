@@ -25,6 +25,9 @@ app
                 res.status(400).json({error: 'prices are too low'});
             });
     })
+    .post('/best-match', jsonParser, async (req, res) => {
+        listingService.getBestMatches(req.body).then(result => res.json({listings: result}));
+    })
 ;
 
 const port = Number(process.env.PORT || 8080);
