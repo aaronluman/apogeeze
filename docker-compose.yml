@@ -8,18 +8,3 @@ services:
     environment:
       POSTGRES_DB: apogeeze_dev
       POSTGRES_HOST_AUTH_METHOD: trust
-
-  backend:
-    build: .
-    depends_on:
-      - postgres
-    ports:
-      - 8080:5000
-      - 9229:9229  # debugger port
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    command: pnpm start:docker
-    environment:
-      DATABASE_URL: postgres://postgres@postgres/apogeeze_dev
-      PORT: 5000
